@@ -1,7 +1,9 @@
 import hashlib
 import hmac
+import json
 import os
 import urllib.parse
+from collections import namedtuple
 
 import requests
 
@@ -55,7 +57,22 @@ class ApiClient:
         ]
 
         response = self.send_request(params, param_order)
-        return response
+        response_data = urllib.parse.parse_qs(response.text)
+        ProduitsResponse = namedtuple(
+            "ProduitsResponse", ["CODE_RETOUR", "PRODUITS", "FOURNISSEURS", "SCEAU"]
+        )
+        produits_response = ProduitsResponse(
+            CODE_RETOUR=response_data.get("CODE_RETOUR", [None])[0],
+            PRODUITS=json.loads(response_data.get("PRODUITS", [None])[0])
+            if response_data.get("PRODUITS")
+            else None,
+            FOURNISSEURS=json.loads(response_data.get("FOURNISSEURS", [None])[0])
+            if response_data.get("FOURNISSEURS")
+            else None,
+            SCEAU=response_data.get("SCEAU", [None])[0],
+        )
+
+        return produits_response
 
 
 # Example usage
@@ -64,5 +81,4 @@ if __name__ == "__main__":
     date = "31/03/2025"
     mail = "abc@example.com"
     response = client.get_produits(date, mail)
-    print("Response status:", response.status_code)
-    print("Response content:", response.text)
+    print(response)
